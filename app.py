@@ -11,11 +11,12 @@ from dotenv import load_dotenv
 import os
 from groq import Groq
 
+# Fixed CSS with proper syntax
 st.markdown("""
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
     .stTextInput > div > div > input {
-        font-size: 16px !important; /* Prevents iOS zoom */
+        font-size: 16px !important;
         padding: 12px !important;
     }
     
@@ -26,10 +27,80 @@ st.markdown("""
         -webkit-tap-highlight-color: transparent;
     }
     
-    /* Make text areas mobile friendly */
+    /* Fixed CSS syntax - added ! before important */
     .stTextArea > div > div > textarea {
         font-size: 16px !important;
         min-height: 100px;
+    }
+    
+    /* Main app styling */
+    .stApp {
+        background: #000000 !important;
+        color: white !important;
+    }
+    
+    .title {
+        background: #E62727;
+        font-size: 15px;
+        font-weight: bold;
+        padding: 3vmin;
+        border-radius: 1vmin;
+        color: #DCDCDC;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .para {
+        text-align: center;
+        margin-bottom: 20px;
+        color: white;
+    }
+    
+    /* Chat bubble styles */
+    .assistant-bubble {
+        background: #F0F0F0;
+        color: #333333;
+        padding: 12px 16px;
+        border-radius: 18px;
+        margin: 8px 0;
+        max-width: 80%;
+        text-align: left;
+        float: left;
+        clear: both;
+        border-bottom-left-radius: 5px;
+    }
+    
+    .user-bubble {
+        background: #2C3E50;
+        color: #FFFFFF;
+        padding: 12px 16px;
+        border-radius: 18px;
+        margin: 8px 0;
+        max-width: 80%;
+        text-align: left;
+        float: right;
+        clear: both;
+        border-bottom-right-radius: 5px;
+    }
+    
+    .chat-container {
+        overflow: hidden;
+        margin-bottom: 15px;
+    }
+    
+    .role-label {
+        font-weight: bold;
+        margin-bottom: 5px;
+        font-size: 0.8em;
+        opacity: 0.8;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .assistant-bubble, .user-bubble {
+            max-width: 85%;
+            padding: 10px 14px;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -41,43 +112,23 @@ def get_groq_client():
     try:
         # Try Streamlit secrets first (for deployment)
         api_key = st.secrets["GROQ_API_KEY"]
+        st.success("✅ Using Streamlit secrets")
     except (KeyError, FileNotFoundError):
         try:
             # Fall back to environment variables (for local development)
             api_key = os.getenv("GROQ_API_KEY")
+            st.success("✅ Using environment variables")
         except:
             st.error("❌ GROQ_API_KEY not found. Please set it in Streamlit secrets or .env file")
             return None
     
+    if not api_key:
+        st.error("❌ GROQ_API_KEY is empty. Please check your configuration.")
+        return None
+        
     return Groq(api_key=api_key)
 
 client = get_groq_client()
-
-# Setting up the website
-st.markdown("""
-<style>
-    .stApp {
-        background: #000000;
-        color: white;
-    }
-    .title {
-        background: #E62727;
-        font-size: 15px;
-        font-weight: bold;
-        padding: 3vmin;
-        border-radius: 1vmin;
-        color: #DCDCDC;
-        text-align: center;
-    }
-    .para {
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    body {
-        background: #1B3C53;
-    }
-</style>
-""", unsafe_allow_html=True)
 
 # App title and description
 st.markdown("""
@@ -85,7 +136,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("""
-<p class="para">Welcome to your personal AI assistant!
+<p class="para">Welcome to your personal AI assistant! 
 I can help with coding, writing, analysis, and much more.</p>
 """, unsafe_allow_html=True)
 
@@ -133,27 +184,32 @@ with st.sidebar:
     """)
     st.markdown("---")
     
-    if st.button("🗑️ Clear Chat History"):
-        st.session_state.messages = [
-            {
-                "role": "assistant",
-                "content": "Hi! I'm your AI assistant. How can I help you today?"
-            }
-        ]
-        st.rerun()
+    col1, col2 = st.columns(2)
     
-    # Export chat functionality
-    if "messages" in st.session_state:
-        chat_text = "AI Chat History:\n\n"
-        for msg in st.session_state.messages:
-            chat_text += f"{msg['role'].upper()}: {msg['content']}\n\n"
-        
-        st.download_button(
-            "📩 Download Chat",
-            chat_text,
-            file_name="ai_chat_history.txt",
-            mime="text/plain"
-        )
+    with col1:
+        if st.button("🗑️ Clear Chat", use_container_width=True):
+            st.session_state.messages = [
+                {
+                    "role": "assistant",
+                    "content": "Hi! I'm your AI assistant. How can I help you today?"
+                }
+            ]
+            st.rerun()
+    
+    with col2:
+        # Export chat functionality
+        if "messages" in st.session_state and len(st.session_state.messages) > 1:
+            chat_text = "AI Chat History:\n\n"
+            for msg in st.session_state.messages:
+                chat_text += f"{msg['role'].upper()}: {msg['content']}\n\n"
+            
+            st.download_button(
+                "📩 Export",
+                chat_text,
+                file_name="ai_chat_history.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
     
     st.markdown("---")
     st.markdown("Built with 💖 using Streamlit + Groq")
@@ -167,62 +223,28 @@ if "messages" not in st.session_state:
         }
     ]
 
-# Chat bubble styles
-st.markdown("""
-<style>
-    .assistant-bubble {
-        background: #F0F0F0;
-        color: #333333;
-        padding: 12px;
-        border-radius: 15px;
-        margin: 5px 0;
-        max-width: 80%;
-        text-align: left;
-        float: left;
-        clear: both;
-    }
-    .user-bubble {
-        background: #2C3E50;
-        color: #FFFFFF;
-        padding: 12px;
-        border-radius: 15px;
-        margin: 5px 0;
-        max-width: 80%;
-        text-align: right;
-        float: right;
-        clear: both;
-    }
-    .chat-container {
-        overflow: hidden;
-        margin-bottom: 10px;
-    }
-    .role-label {
-        font-weight: bold;
-        margin-bottom: 5px;
-        font-size: 0.9em;
-    }
-</style>   
-""", unsafe_allow_html=True)
-
 # Display chat messages
+st.markdown("---")
 for message in st.session_state.messages:
     role_class = "assistant-bubble" if message['role'] == "assistant" else "user-bubble"
+    role_label = "ASSISTANT" if message['role'] == "assistant" else "USER"
     
     st.markdown(f"""
         <div class="chat-container">
             <div class="{role_class}">
-                <div class="role-label">{message['role'].upper()}:</div>
+                <div class="role-label">{role_label}:</div>
                 {message['content']}
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-# Chat input
+# Chat input at the bottom
+st.markdown("---")
 if prompt := st.chat_input("Type your message here..."):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
     
-    # Display user message with custom styling
+    # Display user message immediately
     st.markdown(f"""
     <div class="chat-container">
         <div class="user-bubble">
@@ -262,11 +284,11 @@ if prompt := st.chat_input("Type your message here..."):
             stream=True
         )
         
-        # Stream the response with custom styling
+        # Stream the response
         for chunk in response:
             if chunk.choices[0].delta.content is not None:
                 full_response += chunk.choices[0].delta.content
-                # Update with custom styling and typing cursor
+                # Update with typing cursor
                 message_placeholder.markdown(f"""
                 <div class="chat-container">
                     <div class="assistant-bubble">
@@ -287,18 +309,18 @@ if prompt := st.chat_input("Type your message here..."):
         """, unsafe_allow_html=True)
             
     except Exception as e:
-        error_msg = f"❌ Error: {str(e)}"
+        error_msg = f"Error: {str(e)}"
         st.error(error_msg)
-        # Error message with custom styling
+        full_response = "Sorry, I encountered an error. Please try again."
+        
         message_placeholder.markdown(f"""
         <div class="chat-container">
             <div class="assistant-bubble">
                 <div class="role-label">ASSISTANT:</div>
-                Sorry, I encountered an error. Please try again.
+                {full_response}
             </div>
         </div>
         """, unsafe_allow_html=True)
-        full_response = "Sorry, I encountered an error. Please try again."
 
     # Add assistant response to chat history
     st.session_state.messages.append({
@@ -309,7 +331,7 @@ if prompt := st.chat_input("Type your message here..."):
 # Footer
 st.markdown("---")
 st.markdown("""
-<div style='text-align: center'>
+<div style='text-align: center; color: #666;'>
     <p>Your personal AI assistant • Powered by Groq</p>
 </div>
 """, unsafe_allow_html=True)
