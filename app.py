@@ -16,7 +16,7 @@ load_dotenv()
 
 @st.cache_resource
 def get_groq_client():
-    return Groq(api_key=os.getenv("GROQ_API_ENV"))
+    return groq_key = st.secrets["GROQ_API_KEY"]
 
 client = get_groq_client()
 
@@ -267,4 +267,5 @@ st.markdown("""
 <div style='text-align: center'>
     <p>Your personal AI assistant • Powered by Groq</p>
 </div>
+
 """, unsafe_allow_html=True)
